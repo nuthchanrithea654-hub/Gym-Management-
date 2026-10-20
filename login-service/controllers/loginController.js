@@ -1,34 +1,8 @@
-const express = require('express');
-const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const User = require('../models/User');
 
-const app = express();
-
-app.use(express.json());
-
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
-
-const userSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  password: String,
-  role: String
-});
-
-const User = mongoose.model('User', userSchema);
-
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Login Service is running'
-  });
-});
-
-app.post('/login', async (req, res) => {
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -83,10 +57,6 @@ app.post('/login', async (req, res) => {
       message: 'Internal server error'
     });
   }
-});
+};
 
-const PORT = process.env.PORT || 5002;
-
-app.listen(PORT, () => {
-  console.log(`Login Service running on port ${PORT}`);
-});
+module.exports = { login };
