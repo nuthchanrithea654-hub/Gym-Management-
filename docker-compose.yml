@@ -1,5 +1,7 @@
 name: gym-management
 
+# This file runs the entire stack on one Docker host. For the three-EC2 layout,
+# use compose.ec2-api.yml, compose.ec2-services-2.yml, and compose.ec2-services-3.yml.
 # Request flow:
 #   client -> api-gateway -> nginx -> membership-service-1 / membership-service-2
 #                         -> registration / login / payment / class / booking

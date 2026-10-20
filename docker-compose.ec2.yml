@@ -1,0 +1,161 @@
+name: gym-management
+
+# Pull-only deployment for a single EC2 host. For the distributed three-host
+# layout, use the compose.ec2-api.yml and compose.ec2-services-*.yml files.
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - backend
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+  deploy:
+    resources:
+      limits:
+        cpus: "0.50"
+        memory: 256M
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 20s
+
+x-membership-service: &membership-service
+  <<: *service-defaults
+  image: ${REGISTRY:-draven168}/gym-membership:v1
+  env_file:
+    - ./membership-service/.env
+  environment:
+    NODE_ENV: production
+    PORT: 5003
+  healthcheck:
+    <<: *healthcheck-defaults
+    test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5003/"]
+
+services:
+  api-gateway:
+    <<: *service-defaults
+    image: ${REGISTRY:-draven168}/gym-api-gateway:v3
+    environment:
+      NODE_ENV: production
+      PORT: 5050
+      REGISTRATION_SERVICE: http://registration-service:5001
+      LOGIN_SERVICE: http://login-service:5002
+      MEMBERSHIP_SERVICE: http://nginx:80
+      PAYMENT_SERVICE: http://payment-service:5004
+      CLASS_SERVICE: http://class-service:5005
+      BOOKING_SERVICE: http://booking-service:5006
+    ports:
+      - "${GATEWAY_PORT:-5050}:5050"
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5050/"]
+    depends_on:
+      nginx:
+        condition: service_healthy
+      registration-service:
+        condition: service_healthy
+      login-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      class-service:
+        condition: service_healthy
+      booking-service:
+        condition: service_healthy
+
+  nginx:
+    <<: *service-defaults
+    image: ${REGISTRY:-draven168}/gym-nginx:v1
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+    depends_on:
+      membership-service-1:
+        condition: service_healthy
+      membership-service-2:
+        condition: service_healthy
+
+  registration-service:
+    <<: *service-defaults
+    image: ${REGISTRY:-draven168}/gym-registration:v1
+    env_file:
+      - ./registration-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5001/"]
+
+  login-service:
+    <<: *service-defaults
+    image: ${REGISTRY:-draven168}/gym-login:v1
+    env_file:
+      - ./login-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5002
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5002/"]
+
+  membership-service-1:
+    <<: *membership-service
+    environment:
+      NODE_ENV: production
+      PORT: 5003
+      SERVER_NAME: membership-server-1
+
+  membership-service-2:
+    <<: *membership-service
+    environment:
+      NODE_ENV: production
+      PORT: 5003
+      SERVER_NAME: membership-server-2
+
+  payment-service:
+    <<: *service-defaults
+    image: ${REGISTRY:-draven168}/gym-payment:v1
+    env_file:
+      - ./payment-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5004
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5004/"]
+
+  class-service:
+    <<: *service-defaults
+    image: ${REGISTRY:-draven168}/gym-class:v1
+    env_file:
+      - ./class-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5005
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5005/"]
+
+  booking-service:
+    <<: *service-defaults
+    image: ${REGISTRY:-draven168}/gym-booking:v2
+    env_file:
+      - ./booking-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5006
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5006/"]
+
+networks:
+  frontend:
+  backend:

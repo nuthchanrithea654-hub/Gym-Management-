@@ -5,12 +5,23 @@ const services = require('../config/services');
 const router = express.Router();
 
 // Express strips the mount path, so add it back before forwarding
-const proxyTo = (target, prefix) =>
-  createProxyMiddleware({
-    target,
+const proxyTo = (target, prefix) => {
+  const targets = Array.isArray(target) ? target : [target];
+  let nextTarget = 0;
+
+  return createProxyMiddleware({
+    target: targets[0],
+    ...(targets.length > 1 && {
+      router: () => {
+        const selectedTarget = targets[nextTarget];
+        nextTarget = (nextTarget + 1) % targets.length;
+        return selectedTarget;
+      }
+    }),
     changeOrigin: true,
     pathRewrite: (path) => prefix + path
   });
+};
 
 const routes = [
   { prefix: '/register', target: services.registration },

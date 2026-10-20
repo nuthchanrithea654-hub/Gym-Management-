@@ -1,0 +1,63 @@
+name: gym-api
+
+x-defaults: &defaults
+  restart: unless-stopped
+  networks: [backend]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+x-healthcheck: &healthcheck
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 20s
+
+services:
+  api-gateway:
+    <<: *defaults
+    image: ${REGISTRY:-draven168}/gym-api-gateway:v3
+    environment:
+      NODE_ENV: production
+      PORT: 5050
+      REGISTRATION_SERVICE: http://registration-service:5001
+      LOGIN_SERVICE: http://login-service:5002
+      MEMBERSHIP_SERVICES: "http://${MEMBERSHIP_1_PRIVATE_IP:?set in .env}:5003,http://${MEMBERSHIP_2_PRIVATE_IP:?set in .env}:5003"
+      PAYMENT_SERVICE: "http://${PAYMENT_PRIVATE_IP:?set in .env}:5004"
+      CLASS_SERVICE: "http://${CLASS_PRIVATE_IP:?set in .env}:5005"
+      BOOKING_SERVICE: "http://${BOOKING_PRIVATE_IP:?set in .env}:5006"
+    ports:
+      - "${GATEWAY_PORT:-5050}:5050"
+    depends_on:
+      registration-service:
+        condition: service_healthy
+      login-service:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5050/"]
+
+  registration-service:
+    <<: *defaults
+    image: ${REGISTRY:-draven168}/gym-registration:v1
+    env_file: ./registration-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5001/"]
+
+  login-service:
+    <<: *defaults
+    image: ${REGISTRY:-draven168}/gym-login:v1
+    env_file: ./login-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5002
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5002/"]
+
+networks:
+  backend:
