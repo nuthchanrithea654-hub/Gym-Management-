@@ -3,6 +3,12 @@ const classRoutes = require('./routes/classRoutes');
 
 const app = express();
 
+// Readiness must reflect Atlas connectivity without restarting on a database outage.
+app.get('/readyz', (req, res) => {
+  const ready = require('mongoose').connection.readyState === 1;
+  res.status(ready ? 200 : 503).json({ ready });
+});
+
 app.use(express.json());
 
 app.get('/', (req, res) => {

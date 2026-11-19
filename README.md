@@ -6,6 +6,8 @@ A Node.js microservice application for gym registration, authentication, members
 
 ## Contents
 
+For the CLD 376 local Minikube final project, see [KUBERNETES-FINAL-README.md](./KUBERNETES-FINAL-README.md) and [FINAL-PROJECT-SCREENSHOT-CHECKLIST.md](./FINAL-PROJECT-SCREENSHOT-CHECKLIST.md). The Compose and EC2 instructions below remain available for the midterm deployment.
+
 - [Services](#services)
 - [Architecture](#architecture)
 - [API routes](#api-routes)

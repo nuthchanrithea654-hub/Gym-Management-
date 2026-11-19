@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gym-config
+  namespace: gym-management
+data:
+  NODE_ENV: production
+  REGISTRATION_SERVICE: http://registration-service:5001
+  LOGIN_SERVICE: http://login-service:5002
+  MEMBERSHIP_SERVICE: http://membership-service:5003
+  PAYMENT_SERVICE: http://payment-service:5004
+  CLASS_SERVICE: http://class-service:5005
+  BOOKING_SERVICE: http://booking-service:5006
+  MEMBERSHIP_SERVICES: http://membership-service:5003

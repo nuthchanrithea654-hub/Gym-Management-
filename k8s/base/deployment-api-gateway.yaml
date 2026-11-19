@@ -1,0 +1,108 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: gym-management
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: api-gateway
+        image: gym/api-gateway:k8s-v1
+        imagePullPolicy: Never
+        ports:
+        - name: http
+          containerPort: 5050
+        envFrom:
+        - configMapRef:
+            name: gym-config
+        env:
+        - name: PORT
+          value: '5050'
+        - name: ACCESS_LOG_FILE
+          value: "/app/logs/access.log"
+        securityContext: &1
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        startupProbe:
+          httpGet:
+            path: "/"
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 30
+        livenessProbe:
+          httpGet:
+            path: "/"
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: "/"
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: access-logs
+          mountPath: "/app/logs"
+      - name: log-reader
+        image: busybox:1.37
+        imagePullPolicy: IfNotPresent
+        command:
+        - sh
+        - "-c"
+        - until [ -f /app/logs/access.log ]; do sleep 1; done; exec tail -n +1 -F
+          /app/logs/access.log
+        volumeMounts:
+        - name: access-logs
+          mountPath: "/app/logs"
+          readOnly: true
+        securityContext: *1
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 32Mi
+      volumes:
+       - name: access-logs
+         persistentVolumeClaim:
+           claimName: gateway-logs-pvc

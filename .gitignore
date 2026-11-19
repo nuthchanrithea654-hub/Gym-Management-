@@ -2,3 +2,8 @@ node_modules/
 .env
 .DS_Store
 npm-debug.log
+.env.*
+k8s/local/
+*.local.yaml
+*.local.yml
+*.log

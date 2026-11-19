@@ -1,9 +1,11 @@
 const express = require('express');
 const proxyRoutes = require('./routes/proxyRoutes');
+const accessLog = require('./middleware/accessLog');
 
 const app = express();
 
 app.set('trust proxy', true);
+app.use(accessLog());
 
 app.get('/', (req, res) => {
   res.json({

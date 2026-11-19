@@ -1,0 +1,22 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- 00-namespace.yaml
+- 01-config.yaml
+- pvc-access-logs.yaml
+- deployment-api-gateway.yaml
+- deployment-booking-service.yaml
+- deployment-class-service.yaml
+- deployment-login-service.yaml
+- deployment-membership-service.yaml
+- deployment-payment-service.yaml
+- deployment-registration-service.yaml
+- ingress.yaml
+- service-api-gateway.yaml
+- service-booking-service.yaml
+- service-class-service.yaml
+- service-login-service.yaml
+- service-membership-service.yaml
+- service-payment-service.yaml
+- service-registration-service.yaml
